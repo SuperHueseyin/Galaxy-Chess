@@ -1,2 +1,2 @@
 # Should run any notebook system
-print("Hello Galaxy Chess")
+print("Hello Galaxy Chesss")
