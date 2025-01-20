@@ -4,7 +4,7 @@ import sys
 # p initialisieren
 def initialisiere_p():
     p.init()
-    screen = p.display.set_mode((720, 720))  # Fenstergröße
+    screen = p.display.set_mode((1000, 640))  # Fenstergröße
     p.display.set_caption("Schachbrett")
     return screen
 
@@ -28,7 +28,7 @@ def zeichne_schachbrett(screen, schachbrett):
         "wP": p.image.load("images1/wP.png")
     }
 
-    feld_size = 90
+    feld_size = 80
     
     for key in figur_bilder:
         figur_bilder[key] = p.transform.scale(figur_bilder[key], (feld_size, feld_size))
@@ -71,7 +71,7 @@ def main():
                 p.quit()
                 sys.exit()
 
-        screen.fill((0, 0, 0))  # Hintergrund schwarz
+        screen.fill((240, 217, 181))  # Hintergrund Hellbraun
         zeichne_schachbrett(screen, schachbrett)
         p.display.flip()
         clock.tick(30)
