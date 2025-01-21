@@ -4,3 +4,7 @@
 # VSCODE
 .vscode
 .code
+
+#Stockfish-Engine
+stockfish/*
+!stockfish/.gitkeep
