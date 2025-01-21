@@ -1,4 +1,5 @@
 import pygame as p
+from Figure import Figure
 import sys
 
 # p initialisieren
@@ -96,6 +97,9 @@ def main():
                         schachbrett[ziel_reihe][ziel_spalte] = schachbrett[ausgewählt[0]][ausgewählt[1]]
                         schachbrett[ausgewählt[0]][ausgewählt[1]] = ""
                         ausgewählt = None  # Auswahl zurücksetzen
+
+        #king = Figure.QUEEN_BLACK
+        #print(repr(king))
 
         screen.fill((240,217,181))  # Hintergrund schwarz
         zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt)
