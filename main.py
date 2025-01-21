@@ -1,5 +1,13 @@
 import pygame as p
 import sys
+from stockfish import Stockfish
+
+stockfish = Stockfish("/stockfish")
+stockfish.set_skill_level(10)  # Passe die Schwierigkeit der KI an
+
+ausgewaehltes_feld = None
+spieler_am_zug = "w"  # "w" für Weiß, "b" für Schwarz
+
 
 # p initialisieren
 def initialisiere_p():
@@ -71,10 +79,47 @@ def main():
                 p.quit()
                 sys.exit()
 
-        screen.fill((240, 217, 181))  # Hintergrund Hellbraun
+            # Spielerzug mit Maus
+            elif event.type == p.MOUSEBUTTONDOWN and spieler_am_zug == "w":
+                pos = p.mouse.get_pos()
+                spalte, reihe = pos[0] // 80, pos[1] // 80
+
+                if ausgewaehltes_feld:  # Ziehen
+                    ziel = (reihe, spalte)
+                    start = ausgewaehltes_feld
+                    figur = schachbrett[start[0]][start[1]]
+
+                    # Überprüfen, ob der Zug legal ist
+                    zug = f"{chr(start[1] + 97)}{8 - start[0]}{chr(ziel[1] + 97)}{8 - ziel[0]}"
+                    stockfish.set_position([zug])
+
+                    if stockfish.is_move_correct(zug):  # Zug ausführen
+                        schachbrett[start[0]][start[1]] = ""
+                        schachbrett[ziel[0]][ziel[1]] = figur
+                        spieler_am_zug = "b"  # Nächster Zug gehört der KI
+
+                    ausgewaehltes_feld = None
+                else:
+                    ausgewaehltes_feld = (reihe, spalte)
+
+        # Zug der KI
+        if spieler_am_zug == "b":
+            stockfish.set_position([f"{chr(c + 97)}{8 - r}" for r in range(8) for c in range(8) if schachbrett[r][c]])
+            ki_zug = stockfish.get_best_move()
+
+            if ki_zug:
+                start = (8 - int(ki_zug[1]), ord(ki_zug[0]) - 97)
+                ziel = (8 - int(ki_zug[3]), ord(ki_zug[2]) - 97)
+                schachbrett[ziel[0]][ziel[1]] = schachbrett[start[0]][start[1]]
+                schachbrett[start[0]][start[1]] = ""
+                spieler_am_zug = "w"  # Nächster Zug gehört dem Spieler
+
+        # Bildschirm aktualisieren
+        screen.fill((240, 217, 181))
         zeichne_schachbrett(screen, schachbrett)
         p.display.flip()
         clock.tick(30)
+
 
 if __name__ == "__main__":
     main()
