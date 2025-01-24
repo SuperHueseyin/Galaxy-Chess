@@ -8,4 +8,4 @@
 #Stockfish-Engine
 stockfish/*
 !stockfish/.gitkeep
-_pycache_
+__pycache__
