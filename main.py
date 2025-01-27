@@ -4,7 +4,7 @@ import sys
 # p initialisieren
 def initialisiere_p():
     p.init()
-    screen = p.display.set_mode((1000, 640))  # Fenstergröße
+    screen = p.display.set_mode((1080, 640))  # Fenstergröße erweitert
     p.display.set_caption("Schachbrett")
     return screen
 
@@ -57,6 +57,24 @@ def spieler_auswahl(screen):
                 elif schwarz_button.collidepoint(maus_x, maus_y):
                     return "b"  # Spieler wählt Schwarz
 
+# Übersetzt die Abkürzungen der Figuren in Namen
+def figur_name(figur):
+    namen = {
+        "bR": "Schwarzer Turm",
+        "bN": "Schwarzer Springer",
+        "bB": "Schwarzer Läufer",
+        "bQ": "Schwarze Dame",
+        "bK": "Schwarzer König",
+        "bP": "Schwarzer Bauer",
+        "wR": "Weißer Turm",
+        "wN": "Weißer Springer",
+        "wB": "Weißer Läufer",
+        "wQ": "Weiße Dame",
+        "wK": "Weißer König",
+        "wP": "Weißer Bauer"
+    }
+    return namen.get(figur, "Unbekannt")
+
 # Ein Schachbrett zeichnen
 def zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt):
     farbe_hell = (240, 217, 181)  # Hellbraun
@@ -98,11 +116,25 @@ def zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt):
             if figur:
                 screen.blit(figur_bilder[figur], (spalte * feld_size, reihe * feld_size))
 
+# Textfeld für Züge zeichnen
+def zeichne_zug_liste(screen, zug_liste, start_index):
+    # Hintergrund des Textfelds zeichnen
+    text_rect = p.Rect(660, 10, 400, 620)  # Bereich des Textfelds
+    p.draw.rect(screen, (181, 136, 99), text_rect)  # Hintergrundfarbe
+
+    # Züge anzeigen
+    font = p.font.SysFont("Arial", 25)
+    y_offset = 20  # Abstand zum oberen Rand des Textfelds
+    for i, zug in enumerate(zug_liste, start=start_index):
+        zeichne_text(screen, f"{i}. {zug}", 20, 670, y_offset, (0, 0, 0))  # Text zeichnen
+        y_offset += 25  # Abstand zwischen den Einträgen
+
 # Hauptfunktion
 def main():
     screen = initialisiere_p()
     clock = p.time.Clock()
     feld_size = 80
+    zug_liste = []  # Liste, um die Züge zu speichern
     spieler_farbe = spieler_auswahl(screen)  # Auswahl der Farbe
 
     if spieler_farbe == "w":
@@ -128,7 +160,7 @@ def main():
             ["bP" for _ in range(8)],
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"]
         ]
-        spieler_am_zug = "b"
+        spieler_am_zug = "w"
 
     ausgewählt = None
     zug_nummer = 1
@@ -153,22 +185,28 @@ def main():
 
                         # Verhindern, dass Figuren derselben Farbe geschlagen werden
                         if schachbrett[ziel_reihe][ziel_spalte] and schachbrett[ziel_reihe][ziel_spalte][0] == spieler_am_zug:
-                            ausgewählt = None  # Auswahl aufheben
+                            ausgewählt = None
                         else:
-                            # Figur bewegen
-                            schachbrett[ziel_reihe][ziel_spalte] = schachbrett[ausgewählt[0]][ausgewählt[1]]
+                            figur = schachbrett[ausgewählt[0]][ausgewählt[1]]
+                            zug_liste.append(f"{figur_name(figur)} von {chr(ausgewählt[1] + 65)}{8 - ausgewählt[0]} nach {chr(ziel_spalte + 65)}{8 - ziel_reihe}")
+                            if len(zug_liste) > 20:  # Wenn die Liste mehr als 20 Einträge hat
+                                zug_liste.pop(0)  # Entferne den ältesten Zug
+
+                            schachbrett[ziel_reihe][ziel_spalte] = figur
                             schachbrett[ausgewählt[0]][ausgewählt[1]] = ""
                             ausgewählt = None
 
                             # Spielerwechsel und Zugnummer hochzählen
                             spieler_am_zug = "w" if spieler_am_zug == "b" else "b"
-                            zug_nummer += 1
+                            zug_nummer += 0
 
-        screen.fill((240, 217, 181))  # Hintergrund
+        screen.fill((240, 217, 181))
         zeichne_text(screen, f"Zug: {zug_nummer}, Spieler: {'Weiß' if spieler_am_zug == 'w' else 'Schwarz'}", 24, 10, 610, (0, 0, 0))
         zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt)
+        zeichne_zug_liste(screen, zug_liste, max(1, zug_nummer - len(zug_liste) + 1))
         p.display.flip()
         clock.tick(30)
 
 if __name__ == "__main__":
     main()
+    
