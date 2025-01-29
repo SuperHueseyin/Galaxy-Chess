@@ -303,6 +303,103 @@ def berechne_en_passant_feld(zug_liste):
 
     return "-"
 
+def ist_zug_erlaubt(schachbrett, start, ziel, spieler_farbe):
+    """
+    Prüft, ob der Zug von `start` nach `ziel` für die aktuelle `spieler_farbe` erlaubt ist.
+    """
+    reihe1, spalte1 = start
+    reihe2, spalte2 = ziel
+    figur = schachbrett[reihe1][spalte1]
+
+    if not figur or figur[0] != spieler_farbe:
+        return False  # Kein Zug, weil keine eigene Figur bewegt wird.
+
+    figur_typ = figur[1]  # "P", "N", "B", "R", "Q", "K"
+
+    if figur_typ == "P":  # Bauer
+        return ist_bauer_zug_erlaubt(schachbrett, start, ziel, spieler_farbe)
+    elif figur_typ == "N":  # Springer
+        return ist_springer_zug_erlaubt(start, ziel)
+    elif figur_typ == "B":  # Läufer
+        return ist_laeufer_zug_erlaubt(schachbrett, start, ziel)
+    elif figur_typ == "R":  # Turm
+        return ist_turm_zug_erlaubt(schachbrett, start, ziel)
+    elif figur_typ == "Q":  # Dame
+        return ist_dame_zug_erlaubt(schachbrett, start, ziel)
+    elif figur_typ == "K":  # König
+        return ist_koenig_zug_erlaubt(schachbrett, start, ziel)
+
+    return False
+
+def ist_bauer_zug_erlaubt(schachbrett, start, ziel, spieler_farbe):
+    reihe1, spalte1 = start
+    reihe2, spalte2 = ziel
+    richtung = -1 if spieler_farbe == "w" else 1  # Weiße Bauern (-1), schwarze Bauern (+1)
+
+    # Normaler Zug (eine Reihe nach vorne, kein Schlagen)
+    if spalte1 == spalte2 and schachbrett[reihe2][spalte2] == "":
+        if reihe2 == reihe1 + richtung:
+            return True  # 1 Feld nach vorne
+        # Startposition prüfen (weiße Bauern bei Reihe 6, schwarze bei Reihe 1)
+        if (reihe1 == 6 and spieler_farbe == "w") or (reihe1 == 1 and spieler_farbe == "b"):
+            if reihe2 == reihe1 + 2 * richtung and schachbrett[reihe1 + richtung][spalte1] == "":
+                return True  # 2 Felder nach vorne (Startposition)
+
+    # Schlagen (diagonal)
+    if abs(spalte2 - spalte1) == 1 and reihe2 == reihe1 + richtung:
+        if schachbrett[reihe2][spalte2] and schachbrett[reihe2][spalte2][0] != spieler_farbe:
+            return True  # Gegnerische Figur schlagen
+
+    return False
+
+
+def ist_springer_zug_erlaubt(start, ziel):
+    reihe1, spalte1 = start
+    reihe2, spalte2 = ziel
+    return (abs(reihe2 - reihe1), abs(spalte2 - spalte1)) in [(2, 1), (1, 2)]
+
+def ist_laeufer_zug_erlaubt(schachbrett, start, ziel):
+    reihe1, spalte1 = start
+    reihe2, spalte2 = ziel
+    if abs(reihe2 - reihe1) != abs(spalte2 - spalte1):  # Muss diagonal sein
+        return False
+
+    # Prüfe, ob der Weg frei ist
+    schritt_r = 1 if reihe2 > reihe1 else -1
+    schritt_s = 1 if spalte2 > spalte1 else -1
+    r, s = reihe1 + schritt_r, spalte1 + schritt_s
+    while (r, s) != (reihe2, spalte2):
+        if schachbrett[r][s] != "":
+            return False  # Blockiert
+        r += schritt_r
+        s += schritt_s
+
+    return True
+
+def ist_turm_zug_erlaubt(schachbrett, start, ziel):
+    reihe1, spalte1 = start
+    reihe2, spalte2 = ziel
+    if reihe1 != reihe2 and spalte1 != spalte2:  # Muss gerade Linie sein
+        return False
+
+    schritt_r = 0 if reihe1 == reihe2 else (1 if reihe2 > reihe1 else -1)
+    schritt_s = 0 if spalte1 == spalte2 else (1 if spalte2 > spalte1 else -1)
+    r, s = reihe1 + schritt_r, spalte1 + schritt_s
+    while (r, s) != (reihe2, spalte2):
+        if schachbrett[r][s] != "":
+            return False  # Blockiert
+        r += schritt_r
+        s += schritt_s
+
+    return True
+
+def ist_dame_zug_erlaubt(schachbrett, start, ziel):
+    return ist_laeufer_zug_erlaubt(schachbrett, start, ziel) or ist_turm_zug_erlaubt(schachbrett, start, ziel)
+
+def ist_koenig_zug_erlaubt(schachbrett, start, ziel):
+    reihe1, spalte1 = start
+    reihe2, spalte2 = ziel
+    return abs(reihe2 - reihe1) <= 1 and abs(spalte2 - spalte1) <= 1  # 1 Feld in jede Richtung
 
 
 #
@@ -366,9 +463,11 @@ def main():
                     else:
                         ziel_reihe, ziel_spalte = reihe, spalte
 
-                        # Verhindern, dass Figuren derselben Farbe geschlagen werden
-                        if schachbrett[ziel_reihe][ziel_spalte] and schachbrett[ziel_reihe][ziel_spalte][0] == spieler_am_zug:
+                        if not ist_zug_erlaubt(schachbrett, ausgewählt, (ziel_reihe, ziel_spalte), spieler_am_zug):
+                            print("Ungültiger Zug!")  # Debugging
                             ausgewählt = None
+                            continue  # Zurück zum Event-Loop
+
                         else:
                             figur = schachbrett[ausgewählt[0]][ausgewählt[1]]
                             zug_liste.append(f"{figur_name(figur)} von {chr(ausgewählt[1] + 65)}{8 - ausgewählt[0]} nach {chr(ziel_spalte + 65)}{8 - ziel_reihe}")
