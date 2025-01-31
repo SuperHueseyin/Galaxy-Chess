@@ -11,6 +11,6 @@
 
 3. Stockfish-Engine herunterladen und einbinden
 
-- Neueste Version der Engine von stockfishchess.org/download/ herunterladen
+- Neueste Version der Engine von stockfishchess.org/download/ herunterladen (https://github.com/official-stockfish/Stockfish/releases/latest/download/stockfish-windows-x86-64-sse41-popcnt.zip)
 - zip Ordner entpacken
 - Ausführbare Datei abspeichern im Ordner stockfish
