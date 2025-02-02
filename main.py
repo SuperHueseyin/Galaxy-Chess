@@ -1,68 +1,17 @@
-import pygame as p
 import sys
+import pygame as p
+from Game import Game
+from Board import Board
 from stockfish import Stockfish
 
-# Initialisiere Stockfish
-stockfish = Stockfish(path="stockfish/stockfish-windows-x86-64-sse41-popcnt.exe", parameters={"Threads": 2, "Skill Level": 10})
-
-# p initialisieren
-def initialisiere_p():
-    p.init()
-    screen = p.display.set_mode((1080, 640))  # Fenstergröße erweitert
-    p.display.set_caption("Schachbrett")
-    return screen
-
-# Text auf den Bildschirm rendern
-def zeichne_text(screen, text, font_size, x, y, farbe):
-    font = p.font.SysFont("Arial", font_size, True)
-    text_surface = font.render(text, True, farbe)
-    screen.blit(text_surface, (x, y))
-
-# Auswahl für den Spieler mit Buttons
-def spieler_auswahl(screen):
-    screen.fill((220, 197, 161))  # Hintergrundfarbe
-
-    # Text für die Frage zentrieren
-    font = p.font.SysFont("Arial", 36, True)
-    text_surface = font.render("Wähle deine Farbe:", True, (0, 0, 0))
-    text_rect = text_surface.get_rect(center=(screen.get_width() // 2, 250))
-    screen.blit(text_surface, text_rect)
-
-    # Buttons definieren
-    weiß_button = p.Rect((screen.get_width() // 2) - 210, 280, 200, 80)  # Weiß Button
-    schwarz_button = p.Rect((screen.get_width() // 2) + 0, 280, 200, 80)  # Schwarz Button
-
-    # Weiß-Button zeichnen
-    p.draw.rect(screen, (255, 255, 255), weiß_button)  # Weißer Button
-    weiß_text = font.render("Weiß", True, (0, 0, 0))
-    weiß_text_rect = weiß_text.get_rect(center=weiß_button.center)
-    screen.blit(weiß_text, weiß_text_rect)
-
-    # Schwarz-Button zeichnen
-    p.draw.rect(screen, (0, 0, 0), schwarz_button)  # Schwarzer Button
-    schwarz_text = font.render("Schwarz", True, (255, 255, 255))
-    schwarz_text_rect = schwarz_text.get_rect(center=schwarz_button.center)
-    screen.blit(schwarz_text, schwarz_text_rect)
-
-    p.display.flip()
-
-    # Event-Schleife für die Auswahl
-    while True:
-        for event in p.event.get():
-            if event.type == p.QUIT:
-                p.quit()
-                sys.exit()
-
-            if event.type == p.MOUSEBUTTONDOWN:
-                maus_x, maus_y = p.mouse.get_pos()
-
-                if weiß_button.collidepoint(maus_x, maus_y):
-                    return "w"  # Spieler wählt Weiß
-                elif schwarz_button.collidepoint(maus_x, maus_y):
-                    return "b"  # Spieler wählt Schwarz
+# Global Variable
+stockfish = Stockfish(path="stockfish/linux/stockfish-ubuntu-x86-64", parameters={"Threads": 2, "Skill Level": 10}) # Ubuntu User
+#stockfish = Stockfish(path="stockfish/win/stockfish-windows-x86-64-sse41-popcnt.exe", parameters={"Threads": 2, "Skill Level": 10}) # Windows User
+game = Game()
+board = Board(game.screen)
 
 # Übersetzt die Abkürzungen der Figuren in Namen
-def figur_name(figur):
+def get_piece_name(figur):
     namen = {
         "bR": "Schwarzer Turm",
         "bN": "Schwarzer Springer",
@@ -77,101 +26,105 @@ def figur_name(figur):
         "wK": "Weißer König",
         "wP": "Weißer Bauer"
     }
-    return namen.get(figur, "Unbekannt")
+    return namen.get(figur)
 
 # Ein Schachbrett zeichnen
-def zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt, schlag_koenig_position=None):
-    farbe_hell = (240, 217, 181)  # Hellbraun
-    farbe_dunkel = (181, 136, 99)  # Dunkelbraun
-    farbe_auswahl = (255, 215, 0)  # Gold für Auswahl
-    farbe_rot = (255, 0, 0)  # Rot für das Feld unter dem König
+def render_chess_game(screen, board, feld_size, selected_square, possible_moves=None, king_death_position=None):
+    color_light = (240, 217, 181)  # Hellbraun
+    color_dark = (181, 136, 99)  # Dunkelbraun
+    color_selection = (255, 215, 0)  # Gold für Auswahl
+    color_possible_selection = (135, 206, 250)  # Blau für mögliche Züge
+    color_red = (255, 0, 0)  # Rot für das Feld unter dem König
 
-    figur_bilder = {
-        "bR": p.image.load("images1/bR.png"),
-        "bN": p.image.load("images1/bN.png"),
-        "bB": p.image.load("images1/bB.png"),
-        "bQ": p.image.load("images1/bQ.png"),
-        "bK": p.image.load("images1/bK.png"),
-        "bP": p.image.load("images1/bP.png"),
-        "wR": p.image.load("images1/wR.png"),
-        "wN": p.image.load("images1/wN.png"),
-        "wB": p.image.load("images1/wB.png"),
-        "wQ": p.image.load("images1/wQ.png"),
-        "wK": p.image.load("images1/wK.png"),
-        "wP": p.image.load("images1/wP.png")
+    piece_images = {
+        "bR": p.image.load("img/bR.png"),
+        "bN": p.image.load("img/bN.png"),
+        "bB": p.image.load("img/bB.png"),
+        "bQ": p.image.load("img/bQ.png"),
+        "bK": p.image.load("img/bK.png"),
+        "bP": p.image.load("img/bP.png"),
+        "wR": p.image.load("img/wR.png"),
+        "wN": p.image.load("img/wN.png"),
+        "wB": p.image.load("img/wB.png"),
+        "wQ": p.image.load("img/wQ.png"),
+        "wK": p.image.load("img/wK.png"),
+        "wP": p.image.load("img/wP.png")
     }
 
-    for key in figur_bilder:
-        figur_bilder[key] = p.transform.scale(figur_bilder[key], (feld_size, feld_size))
+    for key in piece_images:
+        piece_images[key] = p.transform.scale(piece_images[key], (feld_size, feld_size))
 
     # Schachbrett zeichnen
-    for reihe in range(8):
-        for spalte in range(8):
-            if (reihe + spalte) % 2 == 0:
-                farbe = farbe_hell
+    for row in range(8):
+        for column in range(8):
+            if (row + column) % 2 == 0:
+                color = color_light
             else:
-                farbe = farbe_dunkel
+                color = color_dark
 
-            if ausgewählt == (reihe, spalte):
-                farbe = farbe_auswahl
+            if selected_square == (row, column):
+                color = color_selection
 
             # Wenn das Feld unter dem König geschlagen wurde, färbe es rot
-            if schlag_koenig_position and schlag_koenig_position == (reihe, spalte):
-                farbe = farbe_rot
+            if king_death_position and king_death_position == (row, column):
+                color = color_red
 
-            p.draw.rect(screen, farbe, p.Rect(spalte * feld_size, reihe * feld_size, feld_size, feld_size))
+            p.draw.rect(screen, color, p.Rect(column * feld_size, row * feld_size, feld_size, feld_size))
 
-            figur = schachbrett[reihe][spalte]
+            figur = board[row][column]
             if figur:
-                screen.blit(figur_bilder[figur], (spalte * feld_size, reihe * feld_size))
+                screen.blit(piece_images[figur], (column * feld_size, row * feld_size))
+
+            if possible_moves and (row, column) in possible_moves:
+                color = color_possible_selection
 
 # Textfeld für Züge zeichnen
-def zeichne_zug_liste(screen, zug_liste):
+def render_move_history(screen, moves_list):
     text_rect = p.Rect(660, 10, 400, 620)  # Bereich des Textfelds
     p.draw.rect(screen, (181, 126, 79), text_rect)  # Hintergrundfarbe
 
     # Maximal 20 Züge anzeigen (nur die letzten)
-    max_anzahl = 20
-    letzte_zuege = zug_liste[-max_anzahl:]  # Nur die letzten X Züge holen
+    max_display_moves = 20
+    last_moves = moves_list[-max_display_moves:]  # Nur die letzten X Züge holen
 
     # Züge anzeigen
     font = p.font.SysFont("Arial", 25)
     y_offset = 20  # Abstand zum oberen Rand des Textfelds
-    for i, zug in enumerate(letzte_zuege, start=max(1, len(zug_liste) - max_anzahl + 1)):
-        zeichne_text(screen, f"{i}. {zug}", 20, 670, y_offset, (0, 0, 0))
+    for i, zug in enumerate(last_moves, start=max(1, len(moves_list) - max_display_moves + 1)):
+        game.set_text(f"{i}. {zug}", 20, (0, 0, 0), False, (670, y_offset) )
         y_offset += 25  # Abstand zwischen den Einträgen
 
 # Auswahlmenü für Umwandlung
-def bauernumwandlung(screen, farbe):
+def bauernumwandlung(screen, player_color):
     screen.fill((220, 197, 161))  # Hintergrundfarbe
 
     font = p.font.SysFont("Arial", 36, True)
-    zeichne_text(screen, "Wähle die neue Figur:", 36, 360, 100, (0, 0, 0))
+    game.set_text("Wähle die neue Figur:", 36, (0, 0, 0), False, (360, 100))
 
-    if farbe == "w":  # Weißer Spieler
-        figuren = ["Dame", "Turm", "Springer", "Läufer"]
-        figuren_bilder = {
-            "Dame": p.image.load("images1/wQ.png"),  # Weiße Dame Bild
-            "Turm": p.image.load("images1/wR.png"),  # Weißer Turm Bild
-            "Springer": p.image.load("images1/wN.png"),  # Weißer Springer Bild
-            "Läufer": p.image.load("images1/wB.png")   # Weißer Läufer Bild
+    if player_color == "w":  # Weißer Spieler
+        piece_types = ["Dame", "Turm", "Springer", "Läufer"]
+        piece_images = {
+            "Dame": p.image.load("img/wQ.png"),  # Weiße Dame Bild
+            "Turm": p.image.load("img/wR.png"),  # Weißer Turm Bild
+            "Springer": p.image.load("img/wN.png"),  # Weißer Springer Bild
+            "Läufer": p.image.load("img/wB.png")   # Weißer Läufer Bild
         }
     else:  # Schwarzer Spieler
-        figuren = ["Dame", "Turm", "Springer", "Läufer"]
-        figuren_bilder = {
-            "Dame": p.image.load("images1/bQ.png"),  # Schwarze Dame Bild
-            "Turm": p.image.load("images1/bR.png"),  # Schwarzer Turm Bild
-            "Springer": p.image.load("images1/bN.png"),  # Schwarzer Springer Bild
-            "Läufer": p.image.load("images1/bB.png")   # Schwarzer Läufer Bild
+        piece_types = ["Dame", "Turm", "Springer", "Läufer"]
+        piece_images = {
+            "Dame": p.image.load("img/bQ.png"),  # Schwarze Dame Bild
+            "Turm": p.image.load("img/bR.png"),  # Schwarzer Turm Bild
+            "Springer": p.image.load("img/bN.png"),  # Schwarzer Springer Bild
+            "Läufer": p.image.load("img/bB.png")   # Schwarzer Läufer Bild
         }
     
     # Bildgröße anpassen (für die Darstellung im Menü)
     bild_size = (60, 60)
-    for key in figuren_bilder:
-        figuren_bilder[key] = p.transform.scale(figuren_bilder[key], bild_size)
+    for key in piece_images:
+        piece_images[key] = p.transform.scale(piece_images[key], bild_size)
 
     buttons = []
-    for i, figur in enumerate(figuren):
+    for i, figur in enumerate(piece_types):
         button = p.Rect(370, 200 + i * 100, 200, 60)
         buttons.append((button, figur))
         
@@ -180,10 +133,10 @@ def bauernumwandlung(screen, farbe):
         
         # Text anzeigen
         text_color = (255, 255, 255)
-        zeichne_text(screen, figur, 30, button.x + 50, button.y + 15, text_color)
+        game.set_text(figur, 30, text_color, False, button.x + 50, button.y + 15)
         
         # Bild anzeigen
-        screen.blit(figuren_bilder[figur], (button.x + 200, button.y + 0))
+        screen.blit(piece_images[figur], (button.x + 200, button.y + 0))
 
     p.display.flip()
 
@@ -193,51 +146,52 @@ def bauernumwandlung(screen, farbe):
                 p.quit()
                 sys.exit()
             if event.type == p.MOUSEBUTTONDOWN:
+                print("2:")
                 maus_x, maus_y = p.mouse.get_pos()
                 for button, figur in buttons:
                     if button.collidepoint(maus_x, maus_y):
                         return figur
 
-# Überprüft, ob der gegnerische König geschlagen wurde
-def ist_gewonnen(schachbrett, spieler_am_zug):
-    gegner_farbe = "b" if spieler_am_zug == "w" else "w"
-    for reihe in range(8):
-        for spalte in range(8):
-            if schachbrett[reihe][spalte] == f"{gegner_farbe}K":
+# Überprüft, ob der gegnerische/eigner Spieler König geschlagen wurde #todo: Hier wird nur auf gegner geprüft, hier auf spieler PRÜFEN ob  König von der KI geschlagen wird
+def win_state(board_state, current_player):
+    next_player = "b" if current_player == "w" else "w"
+    for row in range(8):
+        for column in range(8):
+            if board_state[row][column] == f"{next_player}K":
                 return False  # Der gegnerische König ist noch auf dem Brett
 
     return True  # Der gegnerische König wurde geschlagen
 
-def convertiere_schachbrett_zu_fen(schachbrett, spieler_am_zug, rochade_rechte, en_passant_feld, zug_nummer):
+def convert_board_to_fen(board_state, active_player, rochade_rechte, en_passant_feld, move_counter):
     """
     Konvertiert das Schachbrett in das FEN-Format.
-    :param schachbrett: 2D-Liste mit Figuren (z. B. "wP", "bK", "", etc.)
-    :param spieler_am_zug: "w" oder "b", je nachdem, welcher Spieler am Zug ist
+    :param board_state: 2D-Liste mit Figuren (z. B. "wP", "bK", "", etc.)
+    :param active_player: "w" oder "b", je nachdem, welcher Spieler am Zug ist
     :param rochade_rechte: String, z. B. "KQkq", gibt Rochade-Möglichkeiten an
     :param en_passant_feld: En-Passant-Feld, z. B. "e3", oder "-" falls nicht möglich
-    :param zug_nummer: Aktuelle Zugnummer
+    :param move_counter: Aktuelle Zugnummer
     :return: String im FEN-Format
     """
     fen = ""
 
     # 1. Spielfeld in FEN umwandeln
-    for reihe in schachbrett:
-        leere_felder = 0
-        for feld in reihe:
-            if feld == "":
-                leere_felder += 1
+    for row in board_state:
+        empty_square_count = 0
+        for field in row:
+            if field == "":
+                empty_square_count += 1
             else:
-                if leere_felder > 0:
-                    fen += str(leere_felder)
-                    leere_felder = 0
-                fen += feld[1].upper() if feld[0] == "w" else feld[1].lower()
-        if leere_felder > 0:
-            fen += str(leere_felder)
+                if empty_square_count > 0:
+                    fen += str(empty_square_count)
+                    empty_square_count = 0
+                fen += field[1].upper() if field[0] == "w" else field[1].lower()
+        if empty_square_count > 0:
+            fen += str(empty_square_count)
         fen += "/"
     fen = fen[:-1]  # Entferne den letzten Slash
 
     # 2. Spieler am Zug
-    fen += f" {spieler_am_zug} "
+    fen += f" {active_player} "
 
     # 3. Rochaderechte
     fen += rochade_rechte if rochade_rechte else "-"
@@ -249,253 +203,241 @@ def convertiere_schachbrett_zu_fen(schachbrett, spieler_am_zug, rochade_rechte, 
     fen += "0 "
 
     # 6. Zugnummer
-    fen += str(zug_nummer)
+    fen += str(move_counter)
 
     return fen
 
-def berechne_rochade_rechte(schachbrett, zug_liste):
+def calculate_castling_rights(board_state, piece_movements):
     rochade_rechte = ""
 
     # Prüfen, ob sich der weiße König oder Türme bewegt haben
-    if "wK" in schachbrett[7][4]:
-        if "wR" in schachbrett[7][7] and "Ke1 nach h1" not in zug_liste:
+    if "wK" in board_state[7][4]:
+        if "wR" in board_state[7][7] and "Ke1 nach h1" not in piece_movements:
             rochade_rechte += "K"
-        if "wR" in schachbrett[7][0] and "Ke1 nach a1" not in zug_liste:
+        if "wR" in board_state[7][0] and "Ke1 nach a1" not in piece_movements:
             rochade_rechte += "Q"
 
     # Prüfen, ob sich der schwarze König oder Türme bewegt haben
-    if "bK" in schachbrett[0][4]:
-        if "bR" in schachbrett[0][7] and "Ke8 nach h8" not in zug_liste:
+    if "bK" in board_state[0][4]:
+        if "bR" in board_state[0][7] and "Ke8 nach h8" not in piece_movements:
             rochade_rechte += "k"
-        if "bR" in schachbrett[0][0] and "Ke8 nach a8" not in zug_liste:
+        if "bR" in board_state[0][0] and "Ke8 nach a8" not in piece_movements:
             rochade_rechte += "q"
 
     return rochade_rechte if rochade_rechte else "-"
 
-def berechne_en_passant_feld(zug_liste):
-    if not zug_liste:
+def calculate_en_passant_square(move_list):
+    if not move_list:
         return "-"
 
-    letzter_zug = zug_liste[-1]  # Letzten Zug holen, z. B. "Bauer von E2 nach E4"
-    teile = letzter_zug.split()   # Zerlegen: ["Bauer", "von", "E2", "nach", "E4"]
+    latest_move = move_list[-1]  # Letzten Zug holen, z. B. "Bauer von E2 nach E4"
+    move_details = latest_move.split()   # Zerlegen: ["Bauer", "von", "E2", "nach", "E4"]
 
-    if "Bauer" in teile and "von" in teile and "nach" in teile:
-        start_pos = teile[2]  # E2
-        ziel_pos = teile[4]   # E4
+    if "Bauer" in move_details and "von" in move_details and "nach" in move_details:
+        start_pos = move_details[2]  # E2
+        target_position = move_details[4]   # E4
 
-        if len(start_pos) == 2 and len(ziel_pos) == 2:
-            start_spalte, start_zeile = start_pos[0], int(start_pos[1])
-            ziel_spalte, ziel_zeile = ziel_pos[0], int(ziel_pos[1])
+        if len(start_pos) == 2 and len(target_position) == 2:
+            start_column, start_row = start_pos[0], int(start_pos[1])
+            target_column, target_row = target_position[0], int(target_position[1])
 
-            if abs(start_zeile - ziel_zeile) == 2:  # Bauer ist 2 Felder gezogen
-                en_passant_feld = start_spalte + str((start_zeile + ziel_zeile) // 2)
+            if abs(start_row - target_row) == 2:  # Bauer ist 2 Felder gezogen
+                en_passant_feld = start_column + str((start_row + target_row) // 2)
                 return en_passant_feld.lower()  # FEN benötigt Kleinbuchstaben für Spalten
 
     return "-"
 
-def ist_zug_erlaubt(schachbrett, start, ziel, spieler_farbe):
+def is_valid_chess_move(board_state, start_position, target_position, player_color):
     """
     Prüft, ob der Zug von `start` nach `ziel` für die aktuelle `spieler_farbe` erlaubt ist.
     """
-    reihe1, spalte1 = start
-    reihe2, spalte2 = ziel
-    figur = schachbrett[reihe1][spalte1]
+    row_1, column_1 = start_position
+    row_2, column_2 = target_position
+    figur = board_state[row_1][column_1]
 
-    if not figur or figur[0] != spieler_farbe:
+    if not figur or figur[0] != player_color:
         return False  # Kein Zug, weil keine eigene Figur bewegt wird.
 
     # **Eigene Figur darf nicht auf Zielfeld stehen**
-    if schachbrett[reihe2][spalte2] and schachbrett[reihe2][spalte2][0] == spieler_farbe:
+    if board_state[row_2][column_2] and board_state[row_2][column_2][0] == player_color:
         return False  # Eigene Figur blockiert das Zielfeld
 
     figur_typ = figur[1]  # "P", "N", "B", "R", "Q", "K"
 
     if figur_typ == "P":  # Bauer
-        return ist_bauer_zug_erlaubt(schachbrett, start, ziel)
+        return is_valid_pawn_move(board_state, start_position, target_position)
     elif figur_typ == "N":  # Springer
-        return ist_springer_zug_erlaubt(start, ziel)
+        return is_valid_knight_move(start_position, target_position)
     elif figur_typ == "B":  # Läufer
-        return ist_laeufer_zug_erlaubt(schachbrett, start, ziel)
+        return is_valid_bishop_move(board_state, start_position, target_position)
     elif figur_typ == "R":  # Turm
-        return ist_turm_zug_erlaubt(schachbrett, start, ziel)
+        return is_valid_rook_move(board_state, start_position, target_position)
     elif figur_typ == "Q":  # Dame
-        return ist_dame_zug_erlaubt(schachbrett, start, ziel)
+        return is_valid_queen_move(board_state, start_position, target_position)
     elif figur_typ == "K":  # König
-        return ist_koenig_zug_erlaubt(schachbrett, start, ziel)
+        return is_valid_king_move(board_state, start_position, target_position)
 
     return False
 
-def ist_bauer_zug_erlaubt(schachbrett, start, ziel):
-    reihe1, spalte1 = start
-    reihe2, spalte2 = ziel
-    richtung = -1
+def is_valid_pawn_move(board, start_position, target_position):
+    row_1, column_1 = start_position
+    row_2, column_2 = target_position
+    direction = -1
 
     # Normaler Zug (eine Reihe nach vorne, kein Schlagen)
-    if spalte1 == spalte2 and schachbrett[reihe2][spalte2] == "":
-        if reihe2 == reihe1 + richtung:
+    if column_1 == column_2 and board[row_2][column_2] == "":
+        if row_2 == row_1 + direction:
             return True  # 1 Feld nach vorne
-        if (reihe1 == 6): # Startposition prüfen
-            if reihe2 == reihe1 + 2 * richtung and schachbrett[reihe1 + richtung][spalte1] == "":
+        if (row_1 == 6): # Startposition prüfen
+            if row_2 == row_1 + 2 * direction and board[row_1 + direction][column_1] == "":
                 return True  # 2 Felder nach vorne (Startposition)
             
     # Schlagen (diagonal)
-    if abs(spalte2 - spalte1) == 1 and reihe2 == reihe1 + richtung:
-        if schachbrett[reihe2][spalte2] and schachbrett[reihe2][spalte2][0]:
+    if abs(column_2 - column_1) == 1 and row_2 == row_1 + direction:
+        if board[row_2][column_2] and board[row_2][column_2][0]:
             return True  # Gegnerische Figur schlagen
 
     return False
 
-def ist_springer_zug_erlaubt(start, ziel):
-    reihe1, spalte1 = start
-    reihe2, spalte2 = ziel
-    return (abs(reihe2 - reihe1), abs(spalte2 - spalte1)) in [(2, 1), (1, 2)]
+def is_valid_knight_move(start_position, target_position):
+    row_1, column_1 = start_position
+    row_2, column_2 = target_position
+    return (abs(row_2 - row_1), abs(column_2 - column_1)) in [(2, 1), (1, 2)]
 
-def ist_laeufer_zug_erlaubt(schachbrett, start, ziel):
-    reihe1, spalte1 = start
-    reihe2, spalte2 = ziel
-    if abs(reihe2 - reihe1) != abs(spalte2 - spalte1):  # Muss diagonal sein
+def is_valid_bishop_move(board, start_position, target_position):
+    row_1, column_1 = start_position
+    row_1, column_2 = target_position
+    if abs(row_1 - row_1) != abs(column_2 - column_1):  # Muss diagonal sein
         return False
 
     # Prüfe, ob der Weg frei ist
-    schritt_r = 1 if reihe2 > reihe1 else -1
-    schritt_s = 1 if spalte2 > spalte1 else -1
-    r, s = reihe1 + schritt_r, spalte1 + schritt_s
-    while (r, s) != (reihe2, spalte2):
-        if schachbrett[r][s] != "":
+    schritt_r = 1 if row_1 > row_1 else -1
+    schritt_s = 1 if column_2 > column_1 else -1
+    r, s = row_1 + schritt_r, column_1 + schritt_s
+    while (r, s) != (row_1, column_2):
+        if board[r][s] != "":
             return False  # Blockiert
         r += schritt_r
         s += schritt_s
 
     return True
 
-def ist_turm_zug_erlaubt(schachbrett, start, ziel):
-    reihe1, spalte1 = start
-    reihe2, spalte2 = ziel
-    if reihe1 != reihe2 and spalte1 != spalte2:  # Muss gerade Linie sein
+def is_valid_rook_move(board, start_position, target_position):
+    row_1, column_1 = start_position
+    row_2, column_2 = target_position
+    if row_1 != row_2 and column_1 != column_2:  # Muss gerade Linie sein
         return False
     
-    if reihe1 == reihe2 and spalte1 == spalte2: # Sein eigenes Feld
+    if row_1 == row_2 and column_1 == column_2: # Sein eigenes Feld
         return False
 
-    schritt_r = 0 if reihe1 == reihe2 else (1 if reihe2 > reihe1 else -1)
-    schritt_s = 0 if spalte1 == spalte2 else (1 if spalte2 > spalte1 else -1)
-    r, s = reihe1 + schritt_r, spalte1 + schritt_s
-    while (r, s) != (reihe2, spalte2):
-        if schachbrett[r][s] != "":
+    schritt_r = 0 if row_1 == row_2 else (1 if row_2 > row_1 else -1)
+    schritt_s = 0 if column_1 == column_2 else (1 if column_2 > column_1 else -1)
+    r, s = row_1 + schritt_r, column_1 + schritt_s
+    while (r, s) != (row_2, column_2):
+        if board[r][s] != "":
             return False  # Blockiert
         r += schritt_r
         s += schritt_s
 
     return True
 
-def ist_dame_zug_erlaubt(schachbrett, start, ziel):
-    return ist_laeufer_zug_erlaubt(schachbrett, start, ziel) or ist_turm_zug_erlaubt(schachbrett, start, ziel)
+def is_valid_queen_move(board, start_position, target_position):
+    return is_valid_bishop_move(board, start_position, target_position) or is_valid_rook_move(board, start_position, target_position)
 
-def ist_koenig_zug_erlaubt(schachbrett, start, ziel):
-    reihe1, spalte1 = start
-    reihe2, spalte2 = ziel
+def is_valid_king_move(start_position, target_position):
+    row_1, column_1 = start_position
+    row_2, column_2 = target_position
     
-    if reihe1 == reihe2 and spalte1 == spalte2: # Sein eigenes Feld
+    if row_1 == row_2 and column_1 == column_2: # Sein eigenes Feld
         return False
     
-    return abs(reihe2 - reihe1) <= 1 and abs(spalte2 - spalte1) <= 1  # 1 Feld in jede Richtung
+    return abs(row_2 - row_1) <= 1 and abs(column_2 - column_1) <= 1  # 1 Feld in jede Richtung
 
 # Funktion zur Drehung des Schachbretts für die KI
-def drehe_schachbrett_fuer_ki(schachbrett, spieler_farbe):
-    if spieler_farbe == "w":  # Wenn der Spieler schwarz ist, drehe das Schachbrett für die KI
-        return [reihe[::-1] for reihe in schachbrett[::-1]]  # Umdrehen der Reihen und Spalten
+def drehe_schachbrett_fuer_ki(board, player_color):
+    if player_color == "w":  # Wenn der Spieler schwarz ist, drehe das Schachbrett für die KI
+        return [reihe[::-1] for reihe in board[::-1]]  # Umdrehen der Reihen und Spalten
     else:
-        return schachbrett  # Andernfalls das Schachbrett unverändert lassen
+        return board  # Andernfalls das Schachbrett unverändert lassen
+
+
+def get_possible_moves(board, selected_position, current_player):
+    possible_moves = []
+
+    for r in range(8):
+        for s in range(8):
+            if is_valid_chess_move(board, selected_position, (r, s), current_player):
+                possible_moves.append((r, s))
+
+    return possible_moves
+
+
 
 # Hauptfunktion
 def main():
-    screen = initialisiere_p()
-    clock = p.time.Clock()
-    feld_size = 80
-    zug_liste = []  # Liste, um die Züge zu speichern
-    spieler_farbe = spieler_auswahl(screen)  # Auswahl der Farbe Spieler
-    ki_farbe = "b" if spieler_farbe == "w" else "w" # Auswahl der Farbe KI
+    global possible_positions
+    screen = game.screen
+    player_selected_color = game.get_select_player() # Auswahl der Farbe Spieler
+    ki_selected_color = game.get_ki_selected_color(player_selected_color)  # Auswahl der Farbe KI
+    board_state = board.get_array_board(player_selected_color)
+    player_begin = game.player_begin_game
 
-    if spieler_farbe == "w":
-        schachbrett = [
-            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bP" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["wP" for _ in range(8)],
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
-        ]
-    elif spieler_farbe == "b":
-        schachbrett = [
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
-            ["wP" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["" for _ in range(8)],
-            ["bP" for _ in range(8)],
-            ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"]
-        ]
-        
-    spieler_am_zug = "w"
-    ausgewählt = None
-    zug_nummer = 0
-    schlag_koenig_position = None  # Variable zum Verfolgen der roten Markierung
+    feld_size = 80
+    move_list = [] # Liste, um die Züge zu speichern
+    selected_position = None
+    move_count = 0
+    king_death_position = None  # Variable zum Verfolgen der roten Markierung
 
     while True:
         for event in p.event.get():
             if event.type == p.QUIT:
                 p.quit()
                 sys.exit()
-
             if event.type == p.MOUSEBUTTONDOWN:
-                maus_x, maus_y = p.mouse.get_pos()
-                spalte = maus_x // feld_size
-                reihe = maus_y // feld_size
+                mouse_x_position, mouse_y_position = p.mouse.get_pos()
+                column = mouse_x_position // feld_size
+                row = mouse_y_position // feld_size
 
-                if 0 <= spalte < 8 and 0 <= reihe < 8:
-                    if ausgewählt is None:
-                        if schachbrett[reihe][spalte] and schachbrett[reihe][spalte][0] == spieler_am_zug:
-                            ausgewählt = (reihe, spalte)
+                if 0 <= column < 8 and 0 <= row < 8:
+                    if selected_position is None:
+                        if board_state[row][column] and board_state[row][column][0] == player_begin:
+                            selected_position = (row, column)
                     else:
-                        ziel_reihe, ziel_spalte = reihe, spalte
+                        target_row = row
+                        target_column = column
 
-                        if not ist_zug_erlaubt(schachbrett, ausgewählt, (ziel_reihe, ziel_spalte), spieler_am_zug):
-                            print("Ungültiger Zug!")  # Debugging
-                            ausgewählt = None
-                            continue  # Zurück zum Event-Loop
+                        if not is_valid_chess_move(board_state, selected_position, (target_row, target_column), player_begin):
+                            #print("Ungültiger Zug!")
+                            selected_position = None
+                            possible_positions = []
+                            continue
 
                         else:
-                            figur = schachbrett[ausgewählt[0]][ausgewählt[1]]
-                            zug_liste.append(f"{figur_name(figur)} von {chr(ausgewählt[1] + 65)}{8 - ausgewählt[0]} nach {chr(ziel_spalte + 65)}{8 - ziel_reihe}")
+                            figur = board_state[selected_position[0]][selected_position[1]]
+                            move_list.append(f"{get_piece_name(figur)} von {chr(selected_position[1] + 65)}{8 - selected_position[0]} nach {chr(target_column + 65)}{8 - target_row}")
 
-                            # # Schlagen des Königs
-                            # if schachbrett[ziel_reihe][ziel_spalte] == f"{'b' if spieler_am_zug == 'w' else 'w'}K":
-                            #     schlag_koenig_position = (ziel_reihe, ziel_spalte)
+                            board_state[target_row][target_column] = figur
+                            board_state[selected_position[0]][selected_position[1]] = ""
 
-                            schachbrett[ziel_reihe][ziel_spalte] = figur
-                            schachbrett[ausgewählt[0]][ausgewählt[1]] = ""
-
-                            # Prüfen auf Umwandlung
-                            if figur[1] == "P" and (ziel_reihe == 0 or ziel_reihe == 7):
-                                neue_figur = bauernumwandlung(screen, spieler_am_zug)
+                            # Check to converting
+                            if figur[1] == "P" and (target_row == 0 or target_row == 7):
+                                neue_figur = bauernumwandlung(screen, player_begin)
                                 figuren_map = {"Dame": "Q", "Turm": "R", "Springer": "N", "Läufer": "B"}
-                                schachbrett[ziel_reihe][ziel_spalte] = spieler_am_zug + figuren_map[neue_figur]
+                                board_state[target_row][target_column] = player_begin + figuren_map[neue_figur]
 
-                            ausgewählt = None
+                            selected_position = None
 
                             # Prüfen, ob der gegnerische König geschlagen wurde
-                            if ist_gewonnen(schachbrett, spieler_am_zug):
+                            if win_state(board_state, player_begin):
                                 # Das Spiel ist gewonnen, zeige den Gewinner
                                 screen.fill((240, 217, 181))  # Hintergrund zurücksetzen
-                                zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt, schlag_koenig_position)
-                                zeichne_zug_liste(screen, zug_liste)
+                                render_chess_game(screen, board_state, feld_size, selected_position, king_death_position)
+                                render_move_history(screen, move_list)
 
-                                zeichne_text(screen, f"Spieler {('Weiß' if spieler_am_zug == 'w' else 'Schwarz')} gewinnt!", 36, 100, 250, (0, 0, 0))
-                                zeichne_text(screen, f"Züge: {zug_nummer+1}", 24, 250, 305, (0, 0, 0))
-                                zeichne_text(screen, "Möchtest du nochmal spielen? (J/N)", 24, 100, 345, (0, 0, 0))
+                                game.set_text((f"Spieler {('Weiß' if player_begin == 'w' else 'Schwarz')} gewinnt!", 36, (0, 0, 0), False, 100, 250))
+                                game.set_text(f"Züge: {move_count+1}", 24, (0, 0, 0), False, 250, 305)
+                                game.set_text("Möchtest du nochmal spielen? (J/N)", 24,(0, 0, 0), False, 100, 345)
                                 p.display.flip()
 
                                 warten = True
@@ -513,20 +455,20 @@ def main():
                                 return  # Funktion verlassen, um das Spiel zu beenden
 
                             # Wechseln des Zuges
-                            spieler_am_zug = "w" if spieler_am_zug == "b" else "b"
-                            zug_nummer += 1
+                            player_begin = "w" if player_begin == "b" else "b"
+                            move_count += 1
 
                 # KI am Zug
-                if spieler_am_zug == ki_farbe:
-                    #print(schachbrett)
+                if player_begin == ki_selected_color:
+                    #print(board_state) #todo: hier bist du :)
                     # Aktuelles Brett an Stockfish übergeben
-                    schachbrett = drehe_schachbrett_fuer_ki(schachbrett, spieler_am_zug)
-                    #print(schachbrett)
-                    rochade_rechte = berechne_rochade_rechte(schachbrett, zug_liste)
-                    en_passant_feld = berechne_en_passant_feld(zug_liste)
+                    board_state = drehe_schachbrett_fuer_ki(board_state, player_begin)
+                    #print(board_state)
+                    rochade_rechte = calculate_castling_rights(board_state, move_list)
+                    en_passant_feld = calculate_en_passant_square(move_list)
 
                     stockfish.set_fen_position(
-                        convertiere_schachbrett_zu_fen(schachbrett, spieler_am_zug, rochade_rechte, en_passant_feld, zug_nummer)
+                        convert_board_to_fen(board_state, player_begin, rochade_rechte, en_passant_feld, move_count)
                     )
 
                     ki_zug = stockfish.get_best_move()
@@ -534,35 +476,37 @@ def main():
                     # KI-Zug umsetzen
                     start_pos, ziel_pos = ki_zug[:2], ki_zug[2:]
                     start_reihe, start_spalte = 8 - int(start_pos[1]), ord(start_pos[0].lower()) - ord('a')
-                    ziel_reihe, ziel_spalte = 8 - int(ziel_pos[1]), ord(ziel_pos[0].lower()) - ord('a')
+                    target_row, target_column = 8 - int(ziel_pos[1]), ord(ziel_pos[0].lower()) - ord('a')
 
-                    #print(start_reihe, ziel_reihe, start_spalte, ziel_spalte)
+                    #print(start_reihe, target_row, start_spalte, ziel_spalte)
                     #print(f"Start-Spalte berechnet: {start_spalte}, Zeichen: {start_pos[0]}")
                     #print(f"Ziel-Spalte berechnet: {ziel_spalte}, Zeichen: {ziel_pos[0]}")
                     #print(f"KI-Zug: {ki_zug}")  # Debug-Ausgabe
                     #print(f"Start: {start_pos}, Ziel: {ziel_pos}")
                     #print(f"Start-Koordinaten: Reihe={start_reihe}, Spalte={start_spalte}")
-                    #print(f"Ziel-Koordinaten: Reihe={ziel_reihe}, Spalte={ziel_spalte}")
+                    #print(f"Ziel-Koordinaten: Reihe={target_row}, Spalte={ziel_spalte}")
 
-                    figur = schachbrett[start_reihe][start_spalte]
-                    zug_liste.append(f"{figur_name(figur)} von {start_pos[0].upper()}{start_pos[1]} nach {ziel_pos[0].upper()}{ziel_pos[1]}")
+                    figur = board_state[start_reihe][start_spalte]
+                    move_list.append(f"{get_piece_name(figur)} von {start_pos[0].upper()}{start_pos[1]} nach {ziel_pos[0].upper()}{ziel_pos[1]}")
 
-                    schachbrett[ziel_reihe][ziel_spalte] = figur
-                    schachbrett[start_reihe][start_spalte] = ""
+                    board_state[target_row][target_column] = figur
+                    board_state[start_reihe][start_spalte] = ""
 
-                    schachbrett = drehe_schachbrett_fuer_ki(schachbrett, spieler_am_zug)
+                    board_state = drehe_schachbrett_fuer_ki(board_state, player_begin)
 
                     # Spielerzug wechseln
-                    spieler_am_zug = "w" if spieler_am_zug == "b" else "b"
-                    zug_nummer += 1
+                    player_begin = "w" if player_begin == "b" else "b"
+                    move_count += 1
 
         # Schachbrett und andere Informationen zeichnen
         screen.fill((240, 217, 181))
-        zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt, schlag_koenig_position)
-        zeichne_zug_liste(screen, zug_liste)
-        zeichne_text(screen, f"Spieler: {'Weiß' if spieler_am_zug == 'w' else 'Schwarz'} ist dran!", 30, 675, 580, (0, 0, 0))
+        possible_positions = [] if selected_position is None else get_possible_moves(board_state, selected_position, player_begin)
+        render_chess_game(screen, board_state, feld_size, selected_position, possible_positions, king_death_position)
+        render_move_history(screen, move_list)
+        game.set_text( f"Spieler: {'Weiß' if player_begin == 'w' else 'Schwarz'} ist dran!", 30, (0,0,0), False, 675, 580)
         p.display.flip()
-        clock.tick(30)
+        game.set_clock_time(30)
+
 
 if __name__ == "__main__":
     main()
