@@ -69,14 +69,14 @@ def render_chess_game(screen, board, feld_size, selected_square, possible_moves=
             if king_death_position and king_death_position == (row, column):
                 color = color_red
 
+            if possible_moves and (row, column) in possible_moves:
+                color = color_possible_selection
+
             p.draw.rect(screen, color, p.Rect(column * feld_size, row * feld_size, feld_size, feld_size))
 
             figur = board[row][column]
             if figur:
                 screen.blit(piece_images[figur], (column * feld_size, row * feld_size))
-
-            if possible_moves and (row, column) in possible_moves:
-                color = color_possible_selection
 
 # Textfeld für Züge zeichnen
 def render_move_history(screen, moves_list):
@@ -146,7 +146,6 @@ def bauernumwandlung(screen, player_color):
                 p.quit()
                 sys.exit()
             if event.type == p.MOUSEBUTTONDOWN:
-                print("2:")
                 maus_x, maus_y = p.mouse.get_pos()
                 for button, figur in buttons:
                     if button.collidepoint(maus_x, maus_y):
