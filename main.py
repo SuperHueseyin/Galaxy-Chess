@@ -5,7 +5,7 @@ from Board import Board
 from stockfish import Stockfish
 
 # Global Variable
-stockfish = Stockfish(path="stockfish/linux/stockfish-ubuntu-x86-64", parameters={"Threads": 2, "Skill Level": 10}) # Ubuntu User
+#stockfish = Stockfish(path="stockfish/linux/stockfish-ubuntu-x86-64", parameters={"Threads": 2, "Skill Level": 10}) # Ubuntu User
 #stockfish = Stockfish(path="stockfish/win/stockfish-windows-x86-64-sse41-popcnt.exe", parameters={"Threads": 2, "Skill Level": 10}) # Windows User
 game = Game()
 board = Board(game.screen)
