@@ -6,6 +6,5 @@
 .code
 
 #Stockfish-Engine
-stockfish/*
 !stockfish/.gitkeep
 __pycache__
