@@ -78,21 +78,6 @@ def figur_name(figur):
         "wP": "Weißer Bauer"
     }
     return namen.get(figur, "Unbekannt")
-    namen = {
-        "bR": "Schwarzer Turm",
-        "bN": "Schwarzer Springer",
-        "bB": "Schwarzer Läufer",
-        "bQ": "Schwarze Dame",
-        "bK": "Schwarzer König",
-        "bP": "Schwarzer Bauer",
-        "wR": "Weißer Turm",
-        "wN": "Weißer Springer",
-        "wB": "Weißer Läufer",
-        "wQ": "Weiße Dame",
-        "wK": "Weißer König",
-        "wP": "Weißer Bauer"
-    }
-    return namen.get(figur, "Unbekannt")
 
 # Ein Schachbrett zeichnen
 def zeichne_schachbrett(screen, schachbrett, feld_size, ausgewählt, schlag_koenig_position=None):
@@ -326,7 +311,7 @@ def ist_zug_erlaubt(schachbrett, start, ziel, spieler_farbe):
     figur_typ = figur[1]  # "P", "N", "B", "R", "Q", "K"
 
     if figur_typ == "P":  # Bauer
-        return ist_bauer_zug_erlaubt(schachbrett, start, ziel, spieler_farbe)
+        return ist_bauer_zug_erlaubt(schachbrett, start, ziel)
     elif figur_typ == "N":  # Springer
         return ist_springer_zug_erlaubt(start, ziel)
     elif figur_typ == "B":  # Läufer
@@ -340,23 +325,22 @@ def ist_zug_erlaubt(schachbrett, start, ziel, spieler_farbe):
 
     return False
 
-def ist_bauer_zug_erlaubt(schachbrett, start, ziel, spieler_farbe):
+def ist_bauer_zug_erlaubt(schachbrett, start, ziel):
     reihe1, spalte1 = start
     reihe2, spalte2 = ziel
-    richtung = -1 if spieler_farbe == "w" or spieler_farbe == "b" else 1 
+    richtung = -1
 
     # Normaler Zug (eine Reihe nach vorne, kein Schlagen)
     if spalte1 == spalte2 and schachbrett[reihe2][spalte2] == "":
         if reihe2 == reihe1 + richtung:
             return True  # 1 Feld nach vorne
-        # Startposition prüfen (weiße Bauern bei Reihe 6, schwarze bei Reihe 1)
-        if (reihe1 == 6 and spieler_farbe == "w") or (reihe1 == 1 and spieler_farbe == "b"):
+        if (reihe1 == 6): # Startposition prüfen
             if reihe2 == reihe1 + 2 * richtung and schachbrett[reihe1 + richtung][spalte1] == "":
                 return True  # 2 Felder nach vorne (Startposition)
-
+            
     # Schlagen (diagonal)
     if abs(spalte2 - spalte1) == 1 and reihe2 == reihe1 + richtung:
-        if schachbrett[reihe2][spalte2] and schachbrett[reihe2][spalte2][0] != spieler_farbe:
+        if schachbrett[reihe2][spalte2] and schachbrett[reihe2][spalte2][0]:
             return True  # Gegnerische Figur schlagen
 
     return False
