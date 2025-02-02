@@ -1,8 +1,7 @@
 import sys
 import pygame as p
-from Game import Game
-from Board import Board
-from stockfish import Stockfish
+from src.Game import Game
+from src.Board import Board
 
 # Global Variable
 #stockfish = Stockfish(path="stockfish/linux/stockfish-ubuntu-x86-64", parameters={"Threads": 2, "Skill Level": 10}) # Ubuntu User
