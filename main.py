@@ -290,7 +290,7 @@ def is_valid_pawn_move(board, start_position, target_position):
         if (row_1 == 6): # Startposition prüfen
             if row_2 == row_1 + 2 * direction and board[row_1 + direction][column_1] == "":
                 return True  # 2 Felder nach vorne (Startposition)
-            
+
     # Schlagen (diagonal)
     if abs(column_2 - column_1) == 1 and row_2 == row_1 + direction:
         if board[row_2][column_2] and board[row_2][column_2][0]:
