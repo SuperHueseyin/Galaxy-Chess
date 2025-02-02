@@ -1,5 +1,6 @@
 import sys
 import pygame as p
+from stockfish import Stockfish
 from src.Game import Game
 from src.Board import Board
 

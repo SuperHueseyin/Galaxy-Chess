@@ -1,4 +1,4 @@
-from Figure import Figure
+from src.Figure import Figure
 import pygame as game
 
 class Board:
