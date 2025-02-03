@@ -274,7 +274,7 @@ def is_valid_chess_move(board_state, start_position, target_position, player_col
     elif figur_typ == "Q":  # Dame
         return is_valid_queen_move(board_state, start_position, target_position)
     elif figur_typ == "K":  # König
-        return is_valid_king_move(board_state, start_position, target_position)
+        return is_valid_king_move(start_position, target_position)
 
     return False
 
