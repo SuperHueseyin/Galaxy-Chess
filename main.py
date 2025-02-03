@@ -305,15 +305,15 @@ def is_valid_knight_move(start_position, target_position):
 
 def is_valid_bishop_move(board, start_position, target_position):
     row_1, column_1 = start_position
-    row_1, column_2 = target_position
-    if abs(row_1 - row_1) != abs(column_2 - column_1):  # Muss diagonal sein
+    row_2, column_2 = target_position
+    if abs(row_2 - row_1) != abs(column_2 - column_1):  # Muss diagonal sein
         return False
 
     # Prüfe, ob der Weg frei ist
-    schritt_r = 1 if row_1 > row_1 else -1
+    schritt_r = 1 if row_2 > row_1 else -1
     schritt_s = 1 if column_2 > column_1 else -1
     r, s = row_1 + schritt_r, column_1 + schritt_s
-    while (r, s) != (row_1, column_2):
+    while (r, s) != (row_2, column_2):
         if board[r][s] != "":
             return False  # Blockiert
         r += schritt_r
